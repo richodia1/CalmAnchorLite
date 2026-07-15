@@ -12,6 +12,7 @@ http://localhost:8081
 
 | Method | Path | Purpose |
 | --- | --- | --- |
+| `GET` | `/api/health` | Returns API status and seed-data counts. |
 | `GET` | `/api/doctor` | Returns the single doctor profile. |
 | `GET` | `/api/patients` | Returns the five seeded patients. |
 | `GET` | `/api/patients/{patientId}` | Returns one patient by ID. |
@@ -42,3 +43,15 @@ GET /api/schedule/available-slots?date=2026-08-01&currentAppointmentId=appointme
 
 When `currentAppointmentId` is provided, that appointment's current slot remains selectable while other booked slots are excluded.
 
+## Run Locally
+
+```bash
+./mvnw test
+./mvnw spring-boot:run
+```
+
+The API runs without Firebase by default so the seed endpoints work on a fresh clone. Firebase can be enabled later with:
+
+```bash
+./mvnw spring-boot:run -Dspring-boot.run.arguments=--firebase.enabled=true
+```

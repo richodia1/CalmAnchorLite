@@ -4,6 +4,8 @@
 target/
 *.class
 *.log
+.mvn/apache-maven-*/
+.mvn/*.tar.gz
 
 # IDEs
 .idea/
@@ -33,4 +35,3 @@ mobile/*.p8
 mobile/*.p12
 mobile/*.key
 mobile/*.mobileprovision
-

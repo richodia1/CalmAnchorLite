@@ -20,16 +20,22 @@ The API uses Java 21, Spring Boot, Maven, Firebase Admin SDK, and Firestore.
 Run tests:
 
 ```bash
-mvn test
+./mvnw test
 ```
 
 Run the API:
 
 ```bash
-mvn spring-boot:run
+./mvnw spring-boot:run
 ```
 
 The API listens on port `8081`.
+
+Check the running API:
+
+```bash
+curl http://localhost:8081/api/health
+```
 
 ## Mobile
 
@@ -57,6 +63,7 @@ Appointments represent booked 20-minute slots between `09:00` and `17:00`. The c
 
 The `feature/api-seed-data` branch adds read-only seed endpoints for the first working slice:
 
+- `GET /api/health`
 - `GET /api/doctor`
 - `GET /api/patients`
 - `GET /api/appointments`
@@ -74,3 +81,15 @@ src/main/resources/firebase-service-account.json
 ```
 
 It is intentionally ignored by git.
+
+The API runs in seed-data mode by default:
+
+```properties
+firebase.enabled=false
+```
+
+When Firestore-backed repositories are added, run with Firebase enabled and keep the service account JSON local:
+
+```bash
+./mvnw spring-boot:run -Dspring-boot.run.arguments=--firebase.enabled=true
+```
