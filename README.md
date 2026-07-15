@@ -53,6 +53,18 @@ Patient -> Appointment
 
 Appointments represent booked 20-minute slots between `09:00` and `17:00`. The change appointment form must exclude slots already occupied by another appointment.
 
+## Current API Milestone
+
+The `feature/api-seed-data` branch adds read-only seed endpoints for the first working slice:
+
+- `GET /api/doctor`
+- `GET /api/patients`
+- `GET /api/appointments`
+- `GET /api/schedule`
+- `GET /api/schedule/available-slots`
+
+See [docs/api-endpoints.md](docs/api-endpoints.md) for details.
+
 ## Secret Handling
 
 The Firebase Admin SDK JSON is stored locally at:
@@ -62,4 +74,3 @@ src/main/resources/firebase-service-account.json
 ```
 
 It is intentionally ignored by git.
-
