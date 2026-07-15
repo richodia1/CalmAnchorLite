@@ -15,6 +15,7 @@ This plan translates the assessment PDF into sequential implementation milestone
 - Link patients to the doctor with `Patient.doctorId`.
 - Link appointments to the doctor and patient with `Appointment.doctorId` and `Appointment.patientId`.
 - Seed one doctor, five patients, and sample appointments.
+- Expose read-only endpoints for the seeded doctor, patients, appointments, schedule, and available slots.
 
 ## Epic 3 - Read-Only Day Schedule
 
@@ -46,4 +47,3 @@ This plan translates the assessment PDF into sequential implementation milestone
 - Export an APK through Android Studio/Gradle.
 - Install it on a separate Android emulator.
 - Record a 7-10 minute walkthrough of the app, docs, and repository.
-
