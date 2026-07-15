@@ -1,6 +1,6 @@
 # API Endpoints
 
-These endpoints are read-only for the seed-data milestone. They return deterministic in-memory data so the mobile app can be wired before full Firestore CRUD is added.
+These endpoints support the CalmAnchor Lite backend milestone. By default, the API runs in in-memory seed mode so it can be reviewed without private Firebase credentials. When `firebase.enabled=true`, the same endpoint contract is backed by Firestore.
 
 Base URL:
 
@@ -8,16 +8,25 @@ Base URL:
 http://localhost:8081
 ```
 
-## Seed Data
+## Health and Seed Data
 
 | Method | Path | Purpose |
 | --- | --- | --- |
 | `GET` | `/api/health` | Returns API status and seed-data counts. |
+| `POST` | `/api/seed` | Recreates the baseline doctor, five patients, and sample appointments in the active data store. |
 | `GET` | `/api/doctor` | Returns the single doctor profile. |
+| `PUT` | `/api/doctor` | Updates the single doctor profile. |
 | `GET` | `/api/patients` | Returns the five seeded patients. |
+| `POST` | `/api/patients` | Creates a patient. |
 | `GET` | `/api/patients/{patientId}` | Returns one patient by ID. |
+| `PUT` | `/api/patients/{patientId}` | Updates one patient. |
+| `DELETE` | `/api/patients/{patientId}` | Deletes one patient and their appointments. |
 | `GET` | `/api/appointments` | Returns seeded appointments for the working day. |
+| `POST` | `/api/appointments` | Creates an appointment if the selected slot is free. |
 | `GET` | `/api/appointments/{appointmentId}` | Returns one appointment by ID. |
+| `PUT` | `/api/appointments/{appointmentId}` | Updates one appointment if the selected slot is free. |
+| `PATCH` | `/api/appointments/{appointmentId}/slot` | Moves an appointment to a different slot. |
+| `DELETE` | `/api/appointments/{appointmentId}` | Deletes one appointment. |
 | `GET` | `/api/schedule` | Returns all generated 20-minute slots with appointment data merged in. |
 | `GET` | `/api/schedule/available-slots` | Returns slots available for the change appointment form. |
 
@@ -43,6 +52,23 @@ GET /api/schedule/available-slots?date=2026-08-01&currentAppointmentId=appointme
 
 When `currentAppointmentId` is provided, that appointment's current slot remains selectable while other booked slots are excluded.
 
+## Move Appointment Request
+
+```http
+PATCH /api/appointments/appointment-001/slot
+Content-Type: application/json
+```
+
+```json
+{
+  "appointmentDate": "2026-08-01",
+  "slotStart": "09:20",
+  "slotEnd": "09:40"
+}
+```
+
+The API returns `409 Conflict` if another appointment already occupies the target slot.
+
 ## Run Locally
 
 ```bash
@@ -54,4 +80,10 @@ The API runs without Firebase by default so the seed endpoints work on a fresh c
 
 ```bash
 ./mvnw spring-boot:run -Dspring-boot.run.arguments=--firebase.enabled=true
+```
+
+Then seed Firestore:
+
+```bash
+curl -X POST http://localhost:8081/api/seed
 ```

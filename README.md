@@ -61,14 +61,23 @@ Appointments represent booked 20-minute slots between `09:00` and `17:00`. The c
 
 ## Current API Milestone
 
-The `feature/api-seed-data` branch adds read-only seed endpoints for the first working slice:
+The API currently supports seeded Doctor, Patient, and Appointment data plus CRUD endpoints:
 
 - `GET /api/health`
 - `GET /api/doctor`
+- `PUT /api/doctor`
 - `GET /api/patients`
+- `POST /api/patients`
+- `PUT /api/patients/{patientId}`
+- `DELETE /api/patients/{patientId}`
 - `GET /api/appointments`
+- `POST /api/appointments`
+- `PUT /api/appointments/{appointmentId}`
+- `PATCH /api/appointments/{appointmentId}/slot`
+- `DELETE /api/appointments/{appointmentId}`
 - `GET /api/schedule`
 - `GET /api/schedule/available-slots`
+- `POST /api/seed`
 
 See [docs/api-endpoints.md](docs/api-endpoints.md) for details.
 
@@ -88,7 +97,7 @@ The API runs in seed-data mode by default:
 firebase.enabled=false
 ```
 
-When Firestore-backed repositories are added, run with Firebase enabled and keep the service account JSON local:
+To use Firestore-backed persistence, run with Firebase enabled and keep the service account JSON local:
 
 ```bash
 ./mvnw spring-boot:run -Dspring-boot.run.arguments=--firebase.enabled=true
