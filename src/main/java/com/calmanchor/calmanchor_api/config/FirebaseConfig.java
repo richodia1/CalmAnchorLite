@@ -5,12 +5,14 @@ import com.google.cloud.firestore.Firestore;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
 import com.google.firebase.cloud.FirestoreClient;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.Resource;
 
 @Configuration
+@ConditionalOnProperty(prefix = "firebase", name = "enabled", havingValue = "true")
 public class FirebaseConfig {
 
     @Value("${firebase.credentials.path}")
@@ -29,4 +31,3 @@ public class FirebaseConfig {
         return FirestoreClient.getFirestore();
     }
 }
-

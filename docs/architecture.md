@@ -13,6 +13,8 @@ The Spring Boot API is responsible for:
 
 The backend owns the Firebase service account JSON. The mobile app must not contain server credentials.
 
+For the current seed-data milestone, Firebase initialization is disabled by default through `firebase.enabled=false`. This allows reviewers to run and inspect the API without access to the private service account JSON. Firestore integration can be enabled later when real persistence is implemented.
+
 ## Mobile
 
 The Expo app is responsible for:
@@ -26,4 +28,3 @@ The Expo app is responsible for:
 ## Data Boundary
 
 The mobile app should call backend endpoints rather than connecting to Firebase Admin directly. That keeps credentials private and makes the assessment's relational data logic easier to review.
-
