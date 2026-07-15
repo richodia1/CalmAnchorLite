@@ -1,0 +1,36 @@
+.DS_Store
+
+# Java / Maven
+target/
+*.class
+*.log
+
+# IDEs
+.idea/
+.vscode/
+*.iml
+
+# Firebase Admin SDK service account
+src/main/resources/firebase-service-account.json
+src/main/resources/*firebase*.json
+
+# Expo / React Native
+mobile/node_modules/
+mobile/.expo/
+mobile/dist/
+mobile/web-build/
+mobile/expo-env.d.ts
+mobile/.metro-health-check*
+mobile/npm-debug.*
+mobile/yarn-debug.*
+mobile/yarn-error.*
+mobile/.env*.local
+mobile/*.tsbuildinfo
+mobile/ios/
+mobile/android/
+mobile/*.jks
+mobile/*.p8
+mobile/*.p12
+mobile/*.key
+mobile/*.mobileprovision
+

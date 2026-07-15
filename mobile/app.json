@@ -1,0 +1,20 @@
+{
+  "expo": {
+    "name": "CalmAnchor Lite",
+    "slug": "calmanchor-lite",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "calmanchor",
+    "userInterfaceStyle": "automatic",
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "android": {
+      "package": "com.calmanchor.lite"
+    },
+    "ios": {
+      "bundleIdentifier": "com.calmanchor.lite"
+    }
+  }
+}
+
