@@ -9,7 +9,7 @@ npm install
 npm start
 ```
 
-The first screen loads live doctor, patient, schedule, and appointment data from the Spring Boot API. The layout uses a clinical dashboard style with explicit appointment change and move-slot actions.
+The app loads live doctor, patient, schedule, and appointment data from the Spring Boot API. The layout uses a clinical dashboard style with modules for dashboard review, patient CRUD, appointment CRUD, and doctor profile management.
 
 Expo runs on port `8082` so the Spring Boot API can keep using port `8081`.
 

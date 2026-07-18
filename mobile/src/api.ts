@@ -105,8 +105,67 @@ export async function getHealth(): Promise<ApiHealthResponse> {
   return apiRequest('/api/health');
 }
 
+export async function getDoctor(): Promise<Doctor> {
+  return apiRequest('/api/doctor');
+}
+
+export async function saveDoctor(doctor: Doctor): Promise<Doctor> {
+  return apiRequest('/api/doctor', {
+    method: 'PUT',
+    body: JSON.stringify(doctor),
+  });
+}
+
 export async function getPatients(): Promise<Patient[]> {
   return apiRequest('/api/patients');
+}
+
+export async function savePatient(patient: Patient): Promise<Patient> {
+  const patientId = patient.id.trim();
+
+  if (patientId) {
+    return apiRequest(`/api/patients/${encodeURIComponent(patientId)}`, {
+      method: 'PUT',
+      body: JSON.stringify(patient),
+    });
+  }
+
+  return apiRequest('/api/patients', {
+    method: 'POST',
+    body: JSON.stringify(patient),
+  });
+}
+
+export async function deletePatient(patientId: string): Promise<void> {
+  await apiRequestWithoutBody(`/api/patients/${encodeURIComponent(patientId)}`, {
+    method: 'DELETE',
+  });
+}
+
+export async function getAppointments(): Promise<Appointment[]> {
+  return apiRequest('/api/appointments');
+}
+
+export async function saveAppointment(appointment: Appointment): Promise<Appointment> {
+  const appointmentId = appointment.id.trim();
+
+  if (appointmentId) {
+    return apiRequest(`/api/appointments/${encodeURIComponent(appointmentId)}`, {
+      method: 'PUT',
+      body: JSON.stringify(appointment),
+    });
+  }
+
+  return apiRequest('/api/appointments', {
+    method: 'POST',
+    body: JSON.stringify(appointment),
+  });
+}
+
+export async function deleteAppointment(appointmentId: string): Promise<void> {
+  await apiRequestWithoutBody(`/api/appointments/${encodeURIComponent(appointmentId)}`, {
+    method: 'DELETE',
+  });
 }
 
 export async function getSchedule(date = APPOINTMENT_DATE): Promise<DayScheduleResponse> {
@@ -144,6 +203,21 @@ async function apiRequest<T>(path: string, options: ApiRequestOptions = {}): Pro
   }
 
   return (await response.json()) as T;
+}
+
+async function apiRequestWithoutBody(path: string, options: ApiRequestOptions = {}): Promise<void> {
+  const response: ApiResponse = await fetch(`${API_BASE_URL}${path}`, {
+    ...options,
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(await getErrorMessage(response));
+  }
 }
 
 async function getErrorMessage(response: ApiResponse): Promise<string> {
