@@ -3,6 +3,7 @@ package com.calmanchor.calmanchor_api.service;
 import com.calmanchor.calmanchor_api.dto.AppointmentSlotUpdateRequest;
 import com.calmanchor.calmanchor_api.dto.DayScheduleResponse;
 import com.calmanchor.calmanchor_api.dto.ScheduleSlot;
+import com.calmanchor.calmanchor_api.exception.ApiException;
 import com.calmanchor.calmanchor_api.model.Appointment;
 import com.calmanchor.calmanchor_api.model.Doctor;
 import com.calmanchor.calmanchor_api.model.Patient;
@@ -55,6 +56,7 @@ public class FirestoreDataService implements ClinicDataService {
         if (isBlank(doctor.getId())) {
             doctor.setId(DOCTOR_ID);
         }
+        ScheduleRules.validateDoctor(doctor);
 
         await(firestore.collection(DOCTORS).document(doctor.getId()).set(doctor));
         return doctor;
@@ -84,6 +86,7 @@ public class FirestoreDataService implements ClinicDataService {
         if (isBlank(patient.getDoctorId())) {
             patient.setDoctorId(DOCTOR_ID);
         }
+        ScheduleRules.validatePatient(patient);
 
         await(firestore.collection(PATIENTS).document(patient.getId()).set(patient));
         return patient;
@@ -91,6 +94,8 @@ public class FirestoreDataService implements ClinicDataService {
 
     @Override
     public void deletePatient(String patientId) {
+        findPatient(patientId)
+                .orElseThrow(() -> ApiException.notFound("Patient not found: " + patientId));
         await(firestore.collection(PATIENTS).document(patientId).delete());
 
         QuerySnapshot patientAppointments = await(firestore.collection(APPOINTMENTS)
@@ -125,6 +130,8 @@ public class FirestoreDataService implements ClinicDataService {
         if (isBlank(appointment.getDoctorId())) {
             appointment.setDoctorId(DOCTOR_ID);
         }
+        ensurePatientExists(appointment.getPatientId());
+        ScheduleRules.validateAppointment(getDoctor(), appointment);
         ensureSlotIsAvailable(appointment);
 
         await(firestore.collection(APPOINTMENTS).document(appointment.getId()).set(appointment));
@@ -134,11 +141,12 @@ public class FirestoreDataService implements ClinicDataService {
     @Override
     public Appointment moveAppointment(String appointmentId, AppointmentSlotUpdateRequest request) {
         Appointment appointment = findAppointment(appointmentId)
-                .orElseThrow(() -> new IllegalArgumentException("Appointment not found: " + appointmentId));
+                .orElseThrow(() -> ApiException.notFound("Appointment not found: " + appointmentId));
 
         appointment.setAppointmentDate(request.appointmentDate());
         appointment.setSlotStart(request.slotStart());
         appointment.setSlotEnd(request.slotEnd());
+        ScheduleRules.validateAppointment(getDoctor(), appointment);
         ensureSlotIsAvailable(appointment);
 
         await(firestore.collection(APPOINTMENTS).document(appointment.getId()).set(appointment));
@@ -147,6 +155,8 @@ public class FirestoreDataService implements ClinicDataService {
 
     @Override
     public void deleteAppointment(String appointmentId) {
+        findAppointment(appointmentId)
+                .orElseThrow(() -> ApiException.notFound("Appointment not found: " + appointmentId));
         await(firestore.collection(APPOINTMENTS).document(appointmentId).delete());
     }
 
@@ -198,8 +208,13 @@ public class FirestoreDataService implements ClinicDataService {
                 .findFirst();
 
         if (conflictingAppointment.isPresent()) {
-            throw new IllegalArgumentException("Slot already booked: " + appointment.getSlotStart());
+            throw ApiException.conflict("Slot already booked: " + appointment.getSlotStart());
         }
+    }
+
+    private void ensurePatientExists(String patientId) {
+        findPatient(patientId)
+                .orElseThrow(() -> ApiException.badRequest("Appointment patientId must reference an existing patient"));
     }
 
     private ScheduleSlot toScheduleSlot(

@@ -37,6 +37,18 @@ Check the running API:
 curl http://localhost:8081/api/health
 ```
 
+Open Swagger UI:
+
+```text
+http://localhost:8081/swagger-ui.html
+```
+
+OpenAPI JSON:
+
+```text
+http://localhost:8081/v3/api-docs
+```
+
 ## Mobile
 
 The mobile app uses Expo and React Native.
@@ -58,6 +70,8 @@ Patient -> Appointment
 ```
 
 Appointments represent booked 20-minute slots between `09:00` and `17:00`. The change appointment form must exclude slots already occupied by another appointment.
+
+Appointment writes are validated by the API. Invalid slot formats return `400`, missing records return `404`, and already-booked slots return `409`.
 
 ## Current API Milestone
 

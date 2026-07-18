@@ -3,6 +3,7 @@ package com.calmanchor.calmanchor_api.service;
 import com.calmanchor.calmanchor_api.dto.DayScheduleResponse;
 import com.calmanchor.calmanchor_api.dto.AppointmentSlotUpdateRequest;
 import com.calmanchor.calmanchor_api.dto.ScheduleSlot;
+import com.calmanchor.calmanchor_api.exception.ApiException;
 import com.calmanchor.calmanchor_api.model.Appointment;
 import com.calmanchor.calmanchor_api.model.AppointmentStatus;
 import com.calmanchor.calmanchor_api.model.Doctor;
@@ -48,6 +49,7 @@ public class SeedDataService implements ClinicDataService {
         if (isBlank(doctor.getId())) {
             doctor.setId(DOCTOR_ID);
         }
+        ScheduleRules.validateDoctor(doctor);
         this.doctor = doctor;
         return this.doctor;
     }
@@ -70,6 +72,7 @@ public class SeedDataService implements ClinicDataService {
         if (isBlank(patient.getDoctorId())) {
             patient.setDoctorId(DOCTOR_ID);
         }
+        ScheduleRules.validatePatient(patient);
 
         patients.put(patient.getId(), patient);
         return patient;
@@ -77,7 +80,9 @@ public class SeedDataService implements ClinicDataService {
 
     @Override
     public void deletePatient(String patientId) {
-        patients.remove(patientId);
+        if (patients.remove(patientId) == null) {
+            throw ApiException.notFound("Patient not found: " + patientId);
+        }
         appointments.values().removeIf(appointment -> appointment.getPatientId().equals(patientId));
     }
 
@@ -101,6 +106,8 @@ public class SeedDataService implements ClinicDataService {
         if (isBlank(appointment.getDoctorId())) {
             appointment.setDoctorId(DOCTOR_ID);
         }
+        ensurePatientExists(appointment.getPatientId());
+        ScheduleRules.validateAppointment(doctor, appointment);
         ensureSlotIsAvailable(appointment);
 
         appointments.put(appointment.getId(), appointment);
@@ -110,19 +117,24 @@ public class SeedDataService implements ClinicDataService {
     @Override
     public Appointment moveAppointment(String appointmentId, AppointmentSlotUpdateRequest request) {
         Appointment appointment = findAppointment(appointmentId)
-                .orElseThrow(() -> new IllegalArgumentException("Appointment not found: " + appointmentId));
+                .orElseThrow(() -> ApiException.notFound("Appointment not found: " + appointmentId));
 
-        appointment.setAppointmentDate(request.appointmentDate());
-        appointment.setSlotStart(request.slotStart());
-        appointment.setSlotEnd(request.slotEnd());
-        ensureSlotIsAvailable(appointment);
-        appointments.put(appointment.getId(), appointment);
-        return appointment;
+        Appointment updatedAppointment = copyAppointment(appointment);
+        updatedAppointment.setAppointmentDate(request.appointmentDate());
+        updatedAppointment.setSlotStart(request.slotStart());
+        updatedAppointment.setSlotEnd(request.slotEnd());
+        ScheduleRules.validateAppointment(doctor, updatedAppointment);
+        ensureSlotIsAvailable(updatedAppointment);
+
+        appointments.put(updatedAppointment.getId(), updatedAppointment);
+        return updatedAppointment;
     }
 
     @Override
     public void deleteAppointment(String appointmentId) {
-        appointments.remove(appointmentId);
+        if (appointments.remove(appointmentId) == null) {
+            throw ApiException.notFound("Appointment not found: " + appointmentId);
+        }
     }
 
     @Override
@@ -169,7 +181,13 @@ public class SeedDataService implements ClinicDataService {
                 .findFirst();
 
         if (conflictingAppointment.isPresent()) {
-            throw new IllegalArgumentException("Slot already booked: " + appointment.getSlotStart());
+            throw ApiException.conflict("Slot already booked: " + appointment.getSlotStart());
+        }
+    }
+
+    private void ensurePatientExists(String patientId) {
+        if (!patients.containsKey(patientId)) {
+            throw ApiException.badRequest("Appointment patientId must reference an existing patient");
         }
     }
 
@@ -265,6 +283,23 @@ public class SeedDataService implements ClinicDataService {
 
     private String formatTime(LocalTime time) {
         return time.toString();
+    }
+
+    private Appointment copyAppointment(Appointment appointment) {
+        Appointment copy = new Appointment(
+                appointment.getId(),
+                appointment.getDoctorId(),
+                appointment.getPatientId(),
+                appointment.getAppointmentDate(),
+                appointment.getSlotStart(),
+                appointment.getSlotEnd()
+        );
+        copy.setStatus(appointment.getStatus());
+        copy.setReason(appointment.getReason());
+        copy.setNotes(appointment.getNotes());
+        copy.setCreatedAt(appointment.getCreatedAt());
+        copy.setUpdatedAt(appointment.getUpdatedAt());
+        return copy;
     }
 
     private boolean isBlank(String value) {
