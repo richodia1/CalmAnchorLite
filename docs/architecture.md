@@ -28,3 +28,9 @@ The Expo app is responsible for:
 ## Data Boundary
 
 The mobile app should call backend endpoints rather than connecting to Firebase Admin directly. That keeps credentials private and makes the assessment's relational data logic easier to review.
+
+## API Hardening
+
+The API validates schedule writes in one shared rule set so seed mode and Firestore mode behave the same way. Appointment writes must reference an existing patient, stay inside the doctor's configured working day, align to the 20-minute slot grid, and avoid already-booked slots.
+
+Errors are returned as structured JSON so the mobile app can show useful messages instead of parsing plain text.

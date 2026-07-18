@@ -69,6 +69,38 @@ Content-Type: application/json
 
 The API returns `409 Conflict` if another appointment already occupies the target slot.
 
+## Validation Rules
+
+Appointment writes are validated before saving:
+
+- `patientId` must reference an existing patient.
+- `doctorId` must match the active doctor.
+- `appointmentDate` must use `yyyy-MM-dd`.
+- `slotStart` and `slotEnd` must use `HH:mm`.
+- `slotStart` must align to the doctor's 20-minute slot length.
+- `slotEnd` must be exactly one slot length after `slotStart`.
+- The slot must sit inside the doctor's configured working day.
+
+## Error Shape
+
+API errors use a consistent JSON response:
+
+```json
+{
+  "timestamp": "2026-07-18T16:00:00Z",
+  "status": 409,
+  "error": "Conflict",
+  "message": "Slot already booked: 09:40",
+  "path": "/api/appointments"
+}
+```
+
+Common statuses:
+
+- `400 Bad Request` - invalid IDs, date format, time format, or slot alignment.
+- `404 Not Found` - missing patient or appointment.
+- `409 Conflict` - target appointment slot is already booked.
+
 ## Run Locally
 
 ```bash

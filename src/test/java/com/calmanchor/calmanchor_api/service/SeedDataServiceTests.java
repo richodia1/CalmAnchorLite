@@ -2,9 +2,12 @@ package com.calmanchor.calmanchor_api.service;
 
 import com.calmanchor.calmanchor_api.dto.DayScheduleResponse;
 import com.calmanchor.calmanchor_api.dto.ScheduleSlot;
+import com.calmanchor.calmanchor_api.dto.AppointmentSlotUpdateRequest;
+import com.calmanchor.calmanchor_api.exception.ApiException;
 import com.calmanchor.calmanchor_api.model.Appointment;
 import com.calmanchor.calmanchor_api.model.Patient;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpStatus;
 
 import java.util.List;
 
@@ -77,7 +80,45 @@ class SeedDataServiceTests {
         );
 
         assertThatThrownBy(() -> seedDataService.saveAppointment(appointment))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(ApiException.class)
                 .hasMessageContaining("Slot already booked");
+    }
+
+    @Test
+    void appointmentMustReferenceExistingPatient() {
+        Appointment appointment = new Appointment(
+                null,
+                ClinicDataService.DOCTOR_ID,
+                "patient-missing",
+                ClinicDataService.APPOINTMENT_DATE,
+                "09:20",
+                "09:40"
+        );
+
+        assertThatThrownBy(() -> seedDataService.saveAppointment(appointment))
+                .isInstanceOfSatisfying(ApiException.class, exception -> {
+                    assertThat(exception.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST);
+                    assertThat(exception.getMessage()).contains("existing patient");
+                });
+    }
+
+    @Test
+    void rejectedAppointmentMoveDoesNotChangeOriginalAppointment() {
+        AppointmentSlotUpdateRequest invalidRequest = new AppointmentSlotUpdateRequest(
+                ClinicDataService.APPOINTMENT_DATE,
+                "09:10",
+                "09:30"
+        );
+
+        assertThatThrownBy(() -> seedDataService.moveAppointment("appointment-001", invalidRequest))
+                .isInstanceOfSatisfying(ApiException.class, exception -> {
+                    assertThat(exception.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST);
+                    assertThat(exception.getMessage()).contains("align");
+                });
+
+        assertThat(seedDataService.findAppointment("appointment-001"))
+                .get()
+                .extracting(Appointment::getSlotStart)
+                .isEqualTo("09:00");
     }
 }

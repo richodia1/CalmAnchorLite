@@ -59,6 +59,8 @@ Patient -> Appointment
 
 Appointments represent booked 20-minute slots between `09:00` and `17:00`. The change appointment form must exclude slots already occupied by another appointment.
 
+Appointment writes are validated by the API. Invalid slot formats return `400`, missing records return `404`, and already-booked slots return `409`.
+
 ## Current API Milestone
 
 The API currently supports seeded Doctor, Patient, and Appointment data plus CRUD endpoints:

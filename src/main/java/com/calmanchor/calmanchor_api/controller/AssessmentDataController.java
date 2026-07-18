@@ -4,6 +4,7 @@ import com.calmanchor.calmanchor_api.dto.ApiHealthResponse;
 import com.calmanchor.calmanchor_api.dto.AppointmentSlotUpdateRequest;
 import com.calmanchor.calmanchor_api.dto.DayScheduleResponse;
 import com.calmanchor.calmanchor_api.dto.ScheduleSlot;
+import com.calmanchor.calmanchor_api.exception.ApiException;
 import com.calmanchor.calmanchor_api.model.Appointment;
 import com.calmanchor.calmanchor_api.model.Doctor;
 import com.calmanchor.calmanchor_api.model.Patient;
@@ -12,7 +13,6 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -23,7 +23,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -123,9 +122,6 @@ public class AssessmentDataController {
             @PathVariable String appointmentId,
             @Valid @RequestBody AppointmentSlotUpdateRequest request
     ) {
-        if (clinicDataService.findAppointment(appointmentId).isEmpty()) {
-            throw notFound("Appointment not found: " + appointmentId);
-        }
         return clinicDataService.moveAppointment(appointmentId, request);
     }
 
@@ -150,13 +146,7 @@ public class AssessmentDataController {
         return clinicDataService.getAvailableSlots(date, currentAppointmentId);
     }
 
-    @ExceptionHandler(IllegalArgumentException.class)
-    @ResponseStatus(HttpStatus.CONFLICT)
-    public String handleConflict(IllegalArgumentException exception) {
-        return exception.getMessage();
-    }
-
-    private ResponseStatusException notFound(String message) {
-        return new ResponseStatusException(HttpStatus.NOT_FOUND, message);
+    private ApiException notFound(String message) {
+        return ApiException.notFound(message);
     }
 }
