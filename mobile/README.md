@@ -1,6 +1,6 @@
 # CalmAnchor Lite Mobile
 
-Expo / React Native app for the doctor-facing CalmAnchor Lite workflow.
+Expo SDK 54 / React Native app for the doctor-facing CalmAnchor Lite workflow.
 
 ## Run
 
@@ -9,5 +9,19 @@ npm install
 npm start
 ```
 
-The first screen is a lightweight day schedule placeholder. It will be replaced with API-backed patient and appointment data in the next implementation milestone.
+The first screen loads live doctor, patient, schedule, and appointment data from the Spring Boot API. The layout uses a clinical dashboard style with explicit appointment change and move-slot actions.
 
+Expo runs on port `8082` so the Spring Boot API can keep using port `8081`.
+
+Default API URLs:
+
+```text
+iOS simulator / web: http://localhost:8081
+Android emulator: http://10.0.2.2:8081
+```
+
+For Expo Go on a physical phone, start Expo with the laptop LAN address:
+
+```bash
+EXPO_PUBLIC_API_URL=http://YOUR_LAN_IP:8081 npm start -- --clear
+```

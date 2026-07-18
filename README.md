@@ -59,6 +59,14 @@ npm install
 npm start
 ```
 
+The mobile app now reads from the Spring Boot API for health, patients, schedule slots, and appointment slot changes.
+
+For Expo Go on a physical phone, use the laptop LAN address:
+
+```bash
+EXPO_PUBLIC_API_URL=http://YOUR_LAN_IP:8081 npm start -- --clear
+```
+
 ## Core Assessment Model
 
 The required model is:
