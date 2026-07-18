@@ -29,3 +29,15 @@ repository root
   Provides Firestore-backed CRUD endpoints
 ```
 
+## Branch Progression
+
+The implementation is intentionally split into feature branches so the review history shows steady progress:
+
+- `feature/api-seed-data` - backend seed data, schedule responses, and first endpoint documentation.
+- `feature/api-firestore-persistence` - shared data service contract and Firestore-backed persistence.
+- `feature/api-crud-hardening` - full API CRUD, validation, errors, and Swagger UI.
+- `feature/mobile-api-integration` - mobile client connected to the Spring Boot API.
+- `feature/mobile-crud-modules` - mobile CRUD modules for patients, appointments, and doctor settings.
+- `feature/final-polish-and-docs` - final run instructions, APK notes, and testing evidence.
+
+Each branch should be merged only after the app is in a working state.
