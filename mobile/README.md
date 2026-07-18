@@ -25,3 +25,33 @@ For Expo Go on a physical phone, start Expo with the laptop LAN address:
 ```bash
 EXPO_PUBLIC_API_URL=http://YOUR_LAN_IP:8081 npm start -- --clear
 ```
+
+The Spring Boot API must be running separately:
+
+```bash
+cd ..
+./mvnw spring-boot:run
+```
+
+## APK Build
+
+Use Android Studio or Gradle for the assessment APK export:
+
+```bash
+npm install
+npx expo prebuild --platform android
+cd android
+./gradlew assembleDebug
+```
+
+The debug APK is generated at:
+
+```text
+android/app/build/outputs/apk/debug/app-debug.apk
+```
+
+Install it on a separate Android emulator or Android device:
+
+```bash
+adb install -r app/build/outputs/apk/debug/app-debug.apk
+```
