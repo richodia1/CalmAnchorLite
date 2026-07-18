@@ -16,6 +16,7 @@ This plan translates the assessment PDF into sequential implementation milestone
 - Link appointments to the doctor and patient with `Appointment.doctorId` and `Appointment.patientId`.
 - Seed one doctor, five patients, and sample appointments.
 - Expose read-only endpoints for the seeded doctor, patients, appointments, schedule, and available slots.
+- Add CRUD endpoints that work in seed mode and can be backed by Firestore.
 - Verify the API with `./mvnw test` and local `curl` checks.
 
 ## Epic 3 - Read-Only Day Schedule

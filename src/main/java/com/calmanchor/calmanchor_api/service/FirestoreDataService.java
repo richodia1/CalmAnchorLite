@@ -1,46 +1,53 @@
 package com.calmanchor.calmanchor_api.service;
 
-import com.calmanchor.calmanchor_api.dto.DayScheduleResponse;
 import com.calmanchor.calmanchor_api.dto.AppointmentSlotUpdateRequest;
+import com.calmanchor.calmanchor_api.dto.DayScheduleResponse;
 import com.calmanchor.calmanchor_api.dto.ScheduleSlot;
 import com.calmanchor.calmanchor_api.model.Appointment;
-import com.calmanchor.calmanchor_api.model.AppointmentStatus;
 import com.calmanchor.calmanchor_api.model.Doctor;
 import com.calmanchor.calmanchor_api.model.Patient;
+import com.google.api.core.ApiFuture;
+import com.google.cloud.firestore.DocumentSnapshot;
+import com.google.cloud.firestore.Firestore;
+import com.google.cloud.firestore.QuerySnapshot;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalTime;
 import java.util.Comparator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Service
-@ConditionalOnProperty(prefix = "firebase", name = "enabled", havingValue = "false", matchIfMissing = true)
-public class SeedDataService implements ClinicDataService {
+@ConditionalOnProperty(prefix = "firebase", name = "enabled", havingValue = "true")
+public class FirestoreDataService implements ClinicDataService {
 
-    private Doctor doctor;
-    private final Map<String, Patient> patients = new LinkedHashMap<>();
-    private final Map<String, Appointment> appointments = new LinkedHashMap<>();
+    private static final String DOCTORS = "doctors";
+    private static final String PATIENTS = "patients";
+    private static final String APPOINTMENTS = "appointments";
 
-    public SeedDataService() {
-        seedBaselineData();
+    private final Firestore firestore;
+    private final SeedDataService seedDataService = new SeedDataService();
+
+    public FirestoreDataService(Firestore firestore) {
+        this.firestore = firestore;
     }
 
     @Override
     public String getDataMode() {
-        return "seed";
+        return "firestore";
     }
 
     @Override
     public Doctor getDoctor() {
-        return doctor;
+        return findDoctor(DOCTOR_ID)
+                .orElseGet(seedDataService::getDoctor);
     }
 
     @Override
@@ -48,18 +55,25 @@ public class SeedDataService implements ClinicDataService {
         if (isBlank(doctor.getId())) {
             doctor.setId(DOCTOR_ID);
         }
-        this.doctor = doctor;
-        return this.doctor;
+
+        await(firestore.collection(DOCTORS).document(doctor.getId()).set(doctor));
+        return doctor;
     }
 
     @Override
     public List<Patient> getPatients() {
-        return List.copyOf(patients.values());
+        return await(firestore.collection(PATIENTS).whereEqualTo("doctorId", DOCTOR_ID).get())
+                .getDocuments()
+                .stream()
+                .map(document -> toObject(document, Patient.class))
+                .sorted(Comparator.comparing(Patient::getFullName))
+                .toList();
     }
 
     @Override
     public Optional<Patient> findPatient(String patientId) {
-        return Optional.ofNullable(patients.get(patientId));
+        DocumentSnapshot document = await(firestore.collection(PATIENTS).document(patientId).get());
+        return Optional.ofNullable(toObject(document, Patient.class));
     }
 
     @Override
@@ -71,26 +85,36 @@ public class SeedDataService implements ClinicDataService {
             patient.setDoctorId(DOCTOR_ID);
         }
 
-        patients.put(patient.getId(), patient);
+        await(firestore.collection(PATIENTS).document(patient.getId()).set(patient));
         return patient;
     }
 
     @Override
     public void deletePatient(String patientId) {
-        patients.remove(patientId);
-        appointments.values().removeIf(appointment -> appointment.getPatientId().equals(patientId));
+        await(firestore.collection(PATIENTS).document(patientId).delete());
+
+        QuerySnapshot patientAppointments = await(firestore.collection(APPOINTMENTS)
+                .whereEqualTo("patientId", patientId)
+                .get());
+
+        patientAppointments.getDocuments()
+                .forEach(document -> await(document.getReference().delete()));
     }
 
     @Override
     public List<Appointment> getAppointments() {
-        return appointments.values().stream()
+        return await(firestore.collection(APPOINTMENTS).whereEqualTo("doctorId", DOCTOR_ID).get())
+                .getDocuments()
+                .stream()
+                .map(document -> toObject(document, Appointment.class))
                 .sorted(Comparator.comparing(Appointment::getSlotStart))
                 .toList();
     }
 
     @Override
     public Optional<Appointment> findAppointment(String appointmentId) {
-        return Optional.ofNullable(appointments.get(appointmentId));
+        DocumentSnapshot document = await(firestore.collection(APPOINTMENTS).document(appointmentId).get());
+        return Optional.ofNullable(toObject(document, Appointment.class));
     }
 
     @Override
@@ -103,7 +127,7 @@ public class SeedDataService implements ClinicDataService {
         }
         ensureSlotIsAvailable(appointment);
 
-        appointments.put(appointment.getId(), appointment);
+        await(firestore.collection(APPOINTMENTS).document(appointment.getId()).set(appointment));
         return appointment;
     }
 
@@ -116,17 +140,19 @@ public class SeedDataService implements ClinicDataService {
         appointment.setSlotStart(request.slotStart());
         appointment.setSlotEnd(request.slotEnd());
         ensureSlotIsAvailable(appointment);
-        appointments.put(appointment.getId(), appointment);
+
+        await(firestore.collection(APPOINTMENTS).document(appointment.getId()).set(appointment));
         return appointment;
     }
 
     @Override
     public void deleteAppointment(String appointmentId) {
-        appointments.remove(appointmentId);
+        await(firestore.collection(APPOINTMENTS).document(appointmentId).delete());
     }
 
     @Override
     public DayScheduleResponse getDaySchedule(String appointmentDate) {
+        Doctor doctor = getDoctor();
         Map<String, Appointment> appointmentsBySlot = getAppointments().stream()
                 .filter(appointment -> appointment.getAppointmentDate().equals(appointmentDate))
                 .collect(Collectors.toMap(Appointment::getSlotStart, Function.identity()));
@@ -134,8 +160,8 @@ public class SeedDataService implements ClinicDataService {
         Map<String, Patient> patientsById = getPatients().stream()
                 .collect(Collectors.toMap(Patient::getId, Function.identity()));
 
-        List<ScheduleSlot> slots = generateSlotStarts()
-                .map(start -> toScheduleSlot(start, appointmentsBySlot, patientsById))
+        List<ScheduleSlot> slots = generateSlotStarts(doctor)
+                .map(start -> toScheduleSlot(doctor, start, appointmentsBySlot, patientsById))
                 .toList();
 
         return new DayScheduleResponse(doctor, appointmentDate, slots);
@@ -153,15 +179,18 @@ public class SeedDataService implements ClinicDataService {
 
     @Override
     public void seedBaselineData() {
-        this.doctor = seedDoctor();
-        this.patients.clear();
-        seedPatients().forEach(patient -> patients.put(patient.getId(), patient));
-        this.appointments.clear();
-        seedAppointments().forEach(appointment -> appointments.put(appointment.getId(), appointment));
+        saveDoctor(seedDataService.getDoctor());
+        seedDataService.getPatients().forEach(this::savePatient);
+        seedDataService.getAppointments().forEach(this::saveAppointment);
+    }
+
+    private Optional<Doctor> findDoctor(String doctorId) {
+        DocumentSnapshot document = await(firestore.collection(DOCTORS).document(doctorId).get());
+        return Optional.ofNullable(toObject(document, Doctor.class));
     }
 
     private void ensureSlotIsAvailable(Appointment appointment) {
-        Optional<Appointment> conflictingAppointment = appointments.values().stream()
+        Optional<Appointment> conflictingAppointment = getAppointments().stream()
                 .filter(existingAppointment -> !existingAppointment.getId().equals(appointment.getId()))
                 .filter(existingAppointment -> existingAppointment.getDoctorId().equals(appointment.getDoctorId()))
                 .filter(existingAppointment -> existingAppointment.getAppointmentDate().equals(appointment.getAppointmentDate()))
@@ -174,6 +203,7 @@ public class SeedDataService implements ClinicDataService {
     }
 
     private ScheduleSlot toScheduleSlot(
+            Doctor doctor,
             LocalTime start,
             Map<String, Appointment> appointmentsBySlot,
             Map<String, Patient> patientsById
@@ -192,7 +222,7 @@ public class SeedDataService implements ClinicDataService {
                 .orElse(false);
     }
 
-    private Stream<LocalTime> generateSlotStarts() {
+    private Stream<LocalTime> generateSlotStarts(Doctor doctor) {
         LocalTime start = LocalTime.parse(doctor.getWorkingDayStart());
         LocalTime end = LocalTime.parse(doctor.getWorkingDayEnd());
 
@@ -200,71 +230,26 @@ public class SeedDataService implements ClinicDataService {
                 .takeWhile(time -> time.isBefore(end));
     }
 
-    private Doctor seedDoctor() {
-        Doctor seedDoctor = new Doctor(DOCTOR_ID, "Dr. Eleanor Hayes");
-        seedDoctor.setSpecialty("Trauma-informed general practice");
-        seedDoctor.setClinicName("CalmAnchor Clinic");
-        seedDoctor.setWorkingDayStart("09:00");
-        seedDoctor.setWorkingDayEnd("17:00");
-        seedDoctor.setSlotLengthMinutes(20);
-        seedDoctor.setCreatedAt("2026-07-15T09:00:00Z");
-        seedDoctor.setUpdatedAt("2026-07-15T09:00:00Z");
-        return seedDoctor;
-    }
-
-    private List<Patient> seedPatients() {
-        return List.of(
-                patient("patient-001", "Maya Okafor", "1991-03-14", "Grounding plan review", "Prefers written summaries after appointments."),
-                patient("patient-002", "Liam Carter", "1988-11-02", "Sleep disruption and hypervigilance", "Uses evening breathing exercise plan."),
-                patient("patient-003", "Aisha Khan", "1995-06-21", "Care notes update after recent trigger episode", "Responds well to paced check-ins."),
-                patient("patient-004", "Noah Williams", "1982-01-19", "Medication side-effect discussion", "Track appetite and fatigue changes."),
-                patient("patient-005", "Sofia Rossi", "1999-09-08", "Practitioner toolkit review", "Wants coping-card printout.")
-        );
-    }
-
-    private Patient patient(String id, String fullName, String dateOfBirth, String historyNotes, String careNotes) {
-        Patient patient = new Patient(id, DOCTOR_ID, fullName);
-        patient.setDateOfBirth(dateOfBirth);
-        patient.setPhoneNumber("+44 7700 900000");
-        patient.setHistoryNotes(historyNotes);
-        patient.setCareNotes(careNotes);
-        patient.setCreatedAt("2026-07-15T09:00:00Z");
-        patient.setUpdatedAt("2026-07-15T09:00:00Z");
-        return patient;
-    }
-
-    private List<Appointment> seedAppointments() {
-        return List.of(
-                        appointment("appointment-001", "patient-001", "09:00", "Grounding plan review"),
-                        appointment("appointment-002", "patient-002", "09:40", "Sleep disruption follow-up"),
-                        appointment("appointment-003", "patient-003", "10:00", "Care notes update"),
-                        appointment("appointment-004", "patient-004", "11:20", "Medication side-effect discussion"),
-                        appointment("appointment-005", "patient-005", "14:00", "Toolkit review")
-                ).stream()
-                .sorted(Comparator.comparing(Appointment::getSlotStart))
-                .toList();
-    }
-
-    private Appointment appointment(String id, String patientId, String slotStart, String reason) {
-        LocalTime start = LocalTime.parse(slotStart);
-        Appointment appointment = new Appointment(
-                id,
-                DOCTOR_ID,
-                patientId,
-                APPOINTMENT_DATE,
-                slotStart,
-                formatTime(start.plusMinutes(doctor.getSlotLengthMinutes()))
-        );
-        appointment.setStatus(AppointmentStatus.BOOKED);
-        appointment.setReason(reason);
-        appointment.setNotes("Seeded assessment appointment.");
-        appointment.setCreatedAt("2026-07-15T09:00:00Z");
-        appointment.setUpdatedAt("2026-07-15T09:00:00Z");
-        return appointment;
-    }
-
     private String formatTime(LocalTime time) {
         return time.toString();
+    }
+
+    private <T> T toObject(DocumentSnapshot document, Class<T> type) {
+        if (!document.exists()) {
+            return null;
+        }
+        return document.toObject(type);
+    }
+
+    private <T> T await(ApiFuture<T> future) {
+        try {
+            return future.get();
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("Firestore operation interrupted", exception);
+        } catch (ExecutionException exception) {
+            throw new IllegalStateException("Firestore operation failed", exception);
+        }
     }
 
     private boolean isBlank(String value) {

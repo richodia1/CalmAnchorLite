@@ -13,7 +13,7 @@ The Spring Boot API is responsible for:
 
 The backend owns the Firebase service account JSON. The mobile app must not contain server credentials.
 
-For the current seed-data milestone, Firebase initialization is disabled by default through `firebase.enabled=false`. This allows reviewers to run and inspect the API without access to the private service account JSON. Firestore integration can be enabled later when real persistence is implemented.
+Firebase initialization is disabled by default through `firebase.enabled=false`. This allows reviewers to run and inspect the API without access to the private service account JSON. Firestore persistence is available through the same endpoint contract when `firebase.enabled=true`.
 
 ## Mobile
 
