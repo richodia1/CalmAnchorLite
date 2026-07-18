@@ -8,6 +8,20 @@ Base URL:
 http://localhost:8081
 ```
 
+Swagger UI:
+
+```text
+http://localhost:8081/swagger-ui.html
+```
+
+OpenAPI JSON:
+
+```text
+http://localhost:8081/v3/api-docs
+```
+
+The Swagger page is served locally and reads the OpenAPI JSON above.
+
 ## Health and Seed Data
 
 | Method | Path | Purpose |

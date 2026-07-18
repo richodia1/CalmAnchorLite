@@ -37,6 +37,18 @@ Check the running API:
 curl http://localhost:8081/api/health
 ```
 
+Open Swagger UI:
+
+```text
+http://localhost:8081/swagger-ui.html
+```
+
+OpenAPI JSON:
+
+```text
+http://localhost:8081/v3/api-docs
+```
+
 ## Mobile
 
 The mobile app uses Expo and React Native.
