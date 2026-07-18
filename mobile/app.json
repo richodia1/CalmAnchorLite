@@ -4,17 +4,29 @@
     "slug": "calmanchor-lite",
     "version": "1.0.0",
     "orientation": "portrait",
+    "icon": "./assets/icon.png",
     "scheme": "calmanchor",
     "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#F6F7F9"
+    },
     "assetBundlePatterns": [
       "**/*"
     ],
     "android": {
-      "package": "com.calmanchor.lite"
+      "package": "com.calmanchor.lite",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#F6F7F9"
+      }
     },
     "ios": {
       "bundleIdentifier": "com.calmanchor.lite"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
     }
   }
 }
-
