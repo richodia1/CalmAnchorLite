@@ -15,8 +15,12 @@
     "assetBundlePatterns": [
       "**/*"
     ],
+    "plugins": [
+      "./plugins/withAndroidCleartextTraffic"
+    ],
     "android": {
       "package": "com.calmanchor.lite",
+      "usesCleartextTraffic": true,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#F6F7F9"
