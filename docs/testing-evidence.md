@@ -9,6 +9,13 @@ Last verified locally on Saturday, 18 July 2026:
 - `npx expo install --check` - passed.
 - `git diff --check` - passed.
 
+Additional release verification on Wednesday, 22 July 2026:
+
+- `./gradlew assembleRelease` generated a standalone Android APK.
+- Release APK installed successfully on `CalmAnchorLite_AOSP36` Android emulator with `adb install -r`.
+- Android release config allows local cleartext API traffic for `http://10.0.2.2:8081`.
+- Installed APK loaded seed API data from Spring Boot on port `8081`.
+
 ## Backend Checks
 
 Run from the repository root:
